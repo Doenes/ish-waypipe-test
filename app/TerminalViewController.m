@@ -12,6 +12,7 @@
 #import "ArrowBarButton.h"
 #import "UserPreferences.h"
 #import "AboutViewController.h"
+#import "DisplayViewController.h"
 #import "CurrentRoot.h"
 #import "NSObject+SaneKVO.h"
 #import "LinuxInterop.h"
@@ -89,6 +90,7 @@
                  object:nil];
 
 
+    [self addDisplayButton];
     [self _updateStyleFromPreferences:NO];
     
     if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
@@ -391,6 +393,31 @@
 
 #pragma mark Bar
 
+// Adds a button that opens the display (the built in VNC viewer) next to the
+// paste button
+- (void)addDisplayButton {
+    UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
+    button.translatesAutoresizingMaskIntoConstraints = NO;
+    button.accessibilityLabel = @"Display";
+    if (@available(iOS 13, *)) {
+        [button setImage:[UIImage systemImageNamed:@"display"] forState:UIControlStateNormal];
+    } else {
+        [button setTitle:@"GUI" forState:UIControlStateNormal];
+    }
+    [button addTarget:self action:@selector(showDisplay:) forControlEvents:UIControlEventPrimaryActionTriggered];
+    [button.widthAnchor constraintEqualToConstant:31].active = YES;
+    NSUInteger index = [self.bar.arrangedSubviews indexOfObject:self.pasteButton];
+    if (index == NSNotFound)
+        index = self.bar.arrangedSubviews.count;
+    [self.bar insertArrangedSubview:button atIndex:index];
+    self.barControls = [self.barControls arrayByAddingObject:button];
+}
+
+- (IBAction)showDisplay:(id)sender {
+    [self.termView resignFirstResponder];
+    [self presentViewController:[DisplayViewController new] animated:YES completion:nil];
+}
+
 - (IBAction)showAbout:(id)sender {
     UINavigationController *navigationController = [[UIStoryboard storyboardWithName:@"About" bundle:nil] instantiateInitialViewController];
     if ([sender isKindOfClass:[UIGestureRecognizer class]]) {
@@ -507,6 +534,11 @@
                              modifierFlags:UIKeyModifierCommand
                                     action:@selector(showAbout:)
                       discoverabilityTitle:@"Settings"]];
+        [commands addObject:
+         [UIKeyCommand keyCommandWithInput:@"d"
+                             modifierFlags:UIKeyModifierCommand|UIKeyModifierShift
+                                    action:@selector(showDisplay:)
+                      discoverabilityTitle:@"Show Display"]];
     }
     return commands;
 }

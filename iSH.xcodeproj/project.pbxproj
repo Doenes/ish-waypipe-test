@@ -21,6 +21,9 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		AA57D001000000000000000B /* vnc.c in Sources */ = {isa = PBXBuildFile; fileRef = AA57D001000000000000000C /* vnc.c */; };
+		AA57D0010000000000000008 /* VNCClient.m in Sources */ = {isa = PBXBuildFile; fileRef = AA57D0010000000000000009 /* VNCClient.m */; };
+		AA57D0010000000000000005 /* DisplayViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = AA57D0010000000000000006 /* DisplayViewController.m */; };
 		AA57D0010000000000000003 /* signalfd.c in Sources */ = {isa = PBXBuildFile; fileRef = AA57D0010000000000000004 /* signalfd.c */; };
 		AA57D0010000000000000001 /* memfd.c in Sources */ = {isa = PBXBuildFile; fileRef = AA57D0010000000000000002 /* memfd.c */; };
 		0FC2383C2991FBA6004C09EC /* mmx.c in Sources */ = {isa = PBXBuildFile; fileRef = 0FC2383B2991FB82004C09EC /* mmx.c */; };
@@ -428,6 +431,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AA57D001000000000000000D /* vnc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vnc.h; sourceTree = "<group>"; };
+		AA57D001000000000000000C /* vnc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = vnc.c; sourceTree = "<group>"; };
+		AA57D001000000000000000A /* VNCClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VNCClient.h; sourceTree = "<group>"; };
+		AA57D0010000000000000009 /* VNCClient.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = VNCClient.m; sourceTree = "<group>"; };
+		AA57D0010000000000000007 /* DisplayViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DisplayViewController.h; sourceTree = "<group>"; };
+		AA57D0010000000000000006 /* DisplayViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DisplayViewController.m; sourceTree = "<group>"; };
 		AA57D0010000000000000004 /* signalfd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = signalfd.c; sourceTree = "<group>"; };
 		AA57D0010000000000000002 /* memfd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = memfd.c; sourceTree = "<group>"; };
 		0FC2383B2991FB82004C09EC /* mmx.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = mmx.c; sourceTree = "<group>"; };
@@ -1059,6 +1068,12 @@
 				BBCC9D952365430800424C83 /* SceneDelegate.m */,
 				BB792B561F96D90D00FFB7A4 /* TerminalViewController.h */,
 				BB792B571F96D90D00FFB7A4 /* TerminalViewController.m */,
+				AA57D001000000000000000D /* vnc.h */,
+				AA57D001000000000000000C /* vnc.c */,
+				AA57D001000000000000000A /* VNCClient.h */,
+				AA57D0010000000000000009 /* VNCClient.m */,
+				AA57D0010000000000000007 /* DisplayViewController.h */,
+				AA57D0010000000000000006 /* DisplayViewController.m */,
 				BB792B591F96D90D00FFB7A4 /* Terminal.storyboard */,
 				BBFB557D21587B2B00DFE6DE /* Bar */,
 				BB78AB291FAD22440013E782 /* TerminalView.h */,
@@ -2196,6 +2211,9 @@
 				496C7AB227CC697E005D7613 /* Theme.m in Sources */,
 				BB28C79426896B1F00BDC834 /* AboutNavigationController.m in Sources */,
 				BB28C79526896B1F00BDC834 /* TerminalViewController.m in Sources */,
+				AA57D001000000000000000B /* vnc.c in Sources */,
+				AA57D0010000000000000008 /* VNCClient.m in Sources */,
+				AA57D0010000000000000005 /* DisplayViewController.m in Sources */,
 				BB123ACE26C9F13500419CDA /* IOSCalls.m in Sources */,
 				BBC3863F276817AD00CC8C2E /* CurrentRoot.m in Sources */,
 				BB28C79626896B1F00BDC834 /* ProgressReportViewController.m in Sources */,

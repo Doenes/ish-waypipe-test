@@ -1,0 +1,75 @@
+name: Build IPA
+
+# Builds an unsigned iSH.ipa for sideloading (AltStore, SideStore, Sideloadly,
+# Feather, ...; they sign it with your own Apple ID).
+on:
+  push:
+    branches:
+      - master
+      - 'claude/**'
+    paths-ignore:
+      - '**.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ipa:
+    runs-on: macos-26
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install dependencies
+        run: brew install llvm lld ninja libarchive meson
+
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild -project iSH.xcodeproj -scheme iSH -configuration Release \
+            -sdk iphoneos -arch arm64 -derivedDataPath DerivedData \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tee xcodebuild.log | grep -E "error:|warning: .*(DisplayViewController|VNCClient|vnc\.c)|BUILD (SUCCEEDED|FAILED)" || true
+          test -d DerivedData/Build/Products/Release-iphoneos/iSH.app
+
+      - name: Package IPA
+        id: package
+        run: |
+          rm -rf Payload
+          mkdir Payload
+          cp -R DerivedData/Build/Products/Release-iphoneos/iSH.app Payload/
+          name="iSH-$(git rev-parse --short HEAD)-unsigned.ipa"
+          zip -qry "$name" Payload
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          ls -la "$name"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iSH-ipa
+          path: ${{ steps.package.outputs.name }}
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: xcodebuild-log
+          path: xcodebuild.log
+
+      # A release is easier to download on the phone than an artifact (which
+      # needs a GitHub login and comes wrapped in a zip)
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: iSH build ${{ github.run_number }} (${{ github.ref_name }})
+          body: |
+            Unsigned build of ${{ github.sha }} from `${{ github.ref_name }}`.
+            Install it with a sideloading tool such as AltStore, SideStore or Sideloadly.
+          prerelease: true
+          files: ${{ steps.package.outputs.name }}
