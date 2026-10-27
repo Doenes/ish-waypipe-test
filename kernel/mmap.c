@@ -133,6 +133,96 @@ int_t sys_munmap(addr_t addr, uint_t len) {
 #define MREMAP_MAYMOVE_ 1
 #define MREMAP_FIXED_ 2
 
+// Map more of a file mapping at page, continuing a file mapping that has
+// pt_flags and starts at file_offset.
+static int mremap_map_file(struct fd *fd, page_t page, pages_t pages, size_t file_offset, dword_t pt_flags) {
+    int flags = pt_flags & P_SHARED ? MMAP_SHARED : MMAP_PRIVATE;
+    int err = fd->ops->mmap(fd, current->mem, page, pages, file_offset, pt_flags & (P_RWX | P_SHARED), flags);
+    if (err < 0)
+        return err;
+    mem_pt(current->mem, page)->data->fd = fd_retain(fd);
+    mem_pt(current->mem, page)->data->file_offset = file_offset;
+    return 0;
+}
+
+static int_t do_mremap(addr_t addr, dword_t old_len, dword_t new_len, dword_t flags) {
+    pages_t old_pages = PAGE_ROUND_UP(old_len);
+    pages_t new_pages = PAGE_ROUND_UP(new_len);
+    if (new_pages == 0)
+        return _EINVAL;
+
+    // shrinking always works
+    if (new_pages <= old_pages) {
+        if (new_pages < old_pages) {
+            int err = pt_unmap(current->mem, PAGE(addr) + new_pages, old_pages - new_pages);
+            if (err < 0)
+                return _EFAULT;
+        }
+        return addr;
+    }
+
+    struct pt_entry *entry = mem_pt(current->mem, PAGE(addr));
+    if (entry == NULL)
+        return _EFAULT;
+    dword_t pt_flags = entry->flags;
+    struct data *data = entry->data;
+    for (page_t page = PAGE(addr); page < PAGE(addr) + old_pages; page++) {
+        entry = mem_pt(current->mem, page);
+        if (entry == NULL || entry->flags != pt_flags)
+            return _EFAULT;
+    }
+
+    page_t extra_start = PAGE(addr) + old_pages;
+    pages_t extra_pages = new_pages - old_pages;
+    bool can_grow = pt_is_hole(current->mem, extra_start, extra_pages);
+
+    if (pt_flags & P_ANONYMOUS) {
+        if (!can_grow)
+            return _ENOMEM;
+        int err = pt_map_nothing(current->mem, extra_start, extra_pages, pt_flags);
+        if (err < 0)
+            return err;
+        return addr;
+    }
+
+    // File mapping, e.g. a wl_shm pool being resized by a compositor
+    struct fd *fd = data->fd;
+    if (fd == NULL || fd->ops->mmap == NULL) {
+        FIXME("mremap grow on non-file non-anonymous mapping");
+        return _EFAULT;
+    }
+    struct pt_entry *first = mem_pt(current->mem, PAGE(addr));
+    size_t file_offset = data->file_offset + first->offset - (data->file_offset % real_page_size);
+
+    if (can_grow) {
+        int err = mremap_map_file(fd, extra_start, extra_pages,
+                file_offset + ((size_t) old_pages << PAGE_BITS), pt_flags);
+        if (err < 0)
+            return err;
+        return addr;
+    }
+
+    if (!(flags & MREMAP_MAYMOVE_))
+        return _ENOMEM;
+    // Moving a private mapping would lose any modifications made to it
+    if (!(pt_flags & P_SHARED)) {
+        FIXME("mremap move private file mapping");
+        return _ENOMEM;
+    }
+    page_t new_page = pt_find_hole(current->mem, new_pages);
+    if (new_page == BAD_PAGE)
+        return _ENOMEM;
+    // keep the fd alive while the old mapping goes away
+    fd_retain(fd);
+    int err = mremap_map_file(fd, new_page, new_pages, file_offset, pt_flags);
+    if (err >= 0)
+        pt_unmap(current->mem, PAGE(addr), old_pages);
+    fd_close(fd);
+    if (err < 0)
+        return err;
+    return new_page << PAGE_BITS;
+}
+
 int_t sys_mremap(addr_t addr, dword_t old_len, dword_t new_len, dword_t flags) {
     STRACE("mremap(%#x, %#x, %#x, %d)", addr, old_len, new_len, flags);
     if (PGOFFSET(addr) != 0)
@@ -143,38 +233,10 @@ int_t sys_mremap(addr_t addr, dword_t old_len, dword_t new_len, dword_t flags) {
         FIXME("missing MREMAP_FIXED");
         return _EINVAL;
     }
-    pages_t old_pages = PAGE(old_len);
-    pages_t new_pages = PAGE(new_len);
-
-    // shrinking always works
-    if (new_pages <= old_pages) {
-        int err = pt_unmap(current->mem, PAGE(addr) + new_pages, old_pages - new_pages);
-        if (err < 0)
-            return _EFAULT;
-        return addr;
-    }
-
-    struct pt_entry *entry = mem_pt(current->mem, PAGE(addr));
-    if (entry == NULL)
-        return _EFAULT;
-    dword_t pt_flags = entry->flags;
-    for (page_t page = PAGE(addr); page < PAGE(addr) + old_pages; page++) {
-        entry = mem_pt(current->mem, page);
-        if (entry == NULL && entry->flags != pt_flags)
-            return _EFAULT;
-    }
-    if (!(pt_flags & P_ANONYMOUS)) {
-        FIXME("mremap grow on file mappings");
-        return _EFAULT;
-    }
-    page_t extra_start = PAGE(addr) + old_pages;
-    pages_t extra_pages = new_pages - old_pages;
-    if (!pt_is_hole(current->mem, extra_start, extra_pages))
-        return _ENOMEM;
-    int err = pt_map_nothing(current->mem, extra_start, extra_pages, pt_flags);
-    if (err < 0)
-        return err;
-    return addr;
+    write_wrlock(&current->mem->lock);
+    int_t res = do_mremap(addr, old_len, new_len, flags);
+    write_wrunlock(&current->mem->lock);
+    return res;
 }
 
 int_t sys_mprotect(addr_t addr, uint_t len, int_t prot) {

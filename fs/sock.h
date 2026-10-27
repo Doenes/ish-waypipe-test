@@ -16,6 +16,7 @@ int_t sys_bind(fd_t sock_fd, addr_t sockaddr_addr, uint_t sockaddr_len);
 int_t sys_connect(fd_t sock_fd, addr_t sockaddr_addr, uint_t sockaddr_len);
 int_t sys_listen(fd_t sock_fd, int_t backlog);
 int_t sys_accept(fd_t sock_fd, addr_t sockaddr_addr, addr_t sockaddr_len_addr);
+int_t sys_accept4(fd_t sock_fd, addr_t sockaddr_addr, addr_t sockaddr_len_addr, int_t flags);
 int_t sys_getsockname(fd_t sock_fd, addr_t sockaddr_addr, addr_t sockaddr_len_addr);
 int_t sys_getpeername(fd_t sock_fd, addr_t sockaddr_addr, addr_t sockaddr_len_addr);
 int_t sys_socketpair(dword_t domain, dword_t type, dword_t protocol, addr_t sockets_addr);
@@ -60,6 +61,10 @@ struct cmsghdr_ {
     uint8_t data[];
 };
 #define SCM_RIGHTS_ 1
+#define SCM_CREDENTIALS_ 2
+// maximum number of fds in one message, same as Linux
+#define SCM_MAX_FD_ 253
+#define UIO_MAXIOV_ 1024
 // copied and ported from musl
 #define CMSG_LEN_(cmsg) (((cmsg)->len + sizeof(dword_t) - 1) & ~(dword_t)(sizeof(dword_t) - 1))
 #define CMSG_NEXT_(cmsg) ((uint8_t *)(cmsg) + CMSG_LEN_(cmsg))
@@ -141,6 +146,8 @@ static inline int sock_type_to_real(int type, int protocol) {
 #define MSG_DONTWAIT_ 0x40
 #define MSG_EOR_    0x80
 #define MSG_WAITALL_ 0x100
+#define MSG_NOSIGNAL_ 0x4000
+#define MSG_CMSG_CLOEXEC_ 0x40000000
 
 static inline int sock_flags_to_real(int fake) {
     int real = 0;
@@ -151,7 +158,12 @@ static inline int sock_flags_to_real(int fake) {
     if (fake & MSG_DONTWAIT_) real |= MSG_DONTWAIT;
     if (fake & MSG_EOR_) real |= MSG_EOR;
     if (fake & MSG_WAITALL_) real |= MSG_WAITALL;
-    if (fake & ~(MSG_OOB_|MSG_PEEK_|MSG_CTRUNC_|MSG_TRUNC_|MSG_DONTWAIT_|MSG_EOR_|MSG_WAITALL_))
+#ifdef MSG_NOSIGNAL
+    if (fake & MSG_NOSIGNAL_) real |= MSG_NOSIGNAL;
+#endif
+    // SIGPIPE is ignored on the host anyway, so MSG_NOSIGNAL can be dropped
+    // where it doesn't exist. MSG_CMSG_CLOEXEC is handled by recvmsg.
+    if (fake & ~(MSG_OOB_|MSG_PEEK_|MSG_CTRUNC_|MSG_TRUNC_|MSG_DONTWAIT_|MSG_EOR_|MSG_WAITALL_|MSG_NOSIGNAL_|MSG_CMSG_CLOEXEC_))
         TRACE("unimplemented socket flags %d\n", fake);
     return real;
 }

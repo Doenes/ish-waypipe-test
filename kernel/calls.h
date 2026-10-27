@@ -10,6 +10,7 @@
 
 #include "kernel/signal.h"
 #include "fs/sock.h"
+#include "fs/memfd.h"
 #include "kernel/time.h"
 #include "kernel/resource.h"
 #include "kernel/ptrace.h"
@@ -83,6 +84,7 @@ dword_t sys_dup(fd_t fd);
 dword_t sys_dup2(fd_t fd, fd_t new_fd);
 dword_t sys_dup3(fd_t f, fd_t new_f, int_t flags);
 dword_t sys_close(fd_t fd);
+int_t sys_close_range(uint_t first, uint_t last, uint_t flags);
 dword_t sys_fsync(fd_t f);
 dword_t sys_flock(fd_t fd, dword_t operation);
 int_t sys_pipe(addr_t pipe_addr);
@@ -104,6 +106,8 @@ int_t sys_epoll_pwait(fd_t epoll_f, addr_t events_addr, int_t max_events, int_t 
 
 int_t sys_eventfd2(uint_t initval, int_t flags);
 int_t sys_eventfd(uint_t initval);
+int_t sys_signalfd(fd_t f, addr_t mask_addr, uint_t mask_size);
+int_t sys_signalfd4(fd_t f, addr_t mask_addr, uint_t mask_size, int_t flags);
 
 // file management
 fd_t sys_open(addr_t path_addr, dword_t flags, mode_t_ mode);

@@ -106,10 +106,18 @@ void send_signal(struct task *task, int sig, struct siginfo_ info) {
 
     struct sighand *sighand = task->sighand;
     lock(&sighand->lock);
-    if (signal_action(sighand, sig) != SIGNAL_IGNORE) {
+    // Like Linux, a blocked signal is queued even if it would be ignored,
+    // since it might be picked up by sigtimedwait or a signalfd (that's how
+    // event loops usually get SIGCHLD).
+    bool queued = false;
+    if (signal_action(sighand, sig) != SIGNAL_IGNORE ||
+            (sigset_has(task->blocked, sig) && signal_is_blockable(sig))) {
         deliver_signal_unlocked(task, sig, info);
+        queued = true;
     }
     unlock(&sighand->lock);
+    if (queued)
+        signalfd_notify(sig);
 
     if (sig == SIGCONT_ || sig == SIGKILL_) {
         lock(&task->group->lock);
@@ -678,6 +686,7 @@ int_t sys_rt_sigtimedwait(addr_t set_addr, addr_t info_addr, addr_t timeout_addr
         if (sigset_has(set, sigqueue->info.sig)) {
             found = true;
             list_remove(&sigqueue->queue);
+            sigset_del(&current->pending, sigqueue->info.sig);
             break;
         }
     }

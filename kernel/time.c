@@ -401,6 +401,8 @@ int_t sys_timerfd_settime(fd_t f, int_t flags, addr_t new_value_addr, addr_t old
 
     lock(&fd->lock);
     int err = timer_set(fd->timerfd.timer, spec, &old_spec);
+    // rearming the timer resets the expiration count
+    fd->timerfd.expirations = 0;
     unlock(&fd->lock);
     if (err < 0)
         return err;
@@ -411,6 +413,32 @@ int_t sys_timerfd_settime(fd_t f, int_t flags, addr_t new_value_addr, addr_t old
             return _EFAULT;
     }
 
+    return 0;
+}
+
+int_t sys_timerfd_gettime(fd_t f, addr_t value_addr) {
+    STRACE("timerfd_gettime(%d, %#x)", f, value_addr);
+    struct fd *fd = f_get(f);
+    if (fd == NULL)
+        return _EBADF;
+    if (fd->ops != &timerfd_ops)
+        return _EINVAL;
+
+    struct timer *timer = fd->timerfd.timer;
+    struct timer_spec spec = {};
+    lock(&timer->lock);
+    if (timer->active) {
+        struct timespec now = timespec_now(timer->clockid);
+        spec.value = timespec_subtract(timer->end, now);
+        if (!timespec_positive(spec.value))
+            spec.value = (struct timespec) {};
+        spec.interval = timer->interval;
+    }
+    unlock(&timer->lock);
+
+    struct itimerspec_ value = timer_spec_from_real(spec);
+    if (user_put(value_addr, value))
+        return _EFAULT;
     return 0;
 }
 

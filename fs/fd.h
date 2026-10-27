@@ -40,6 +40,14 @@ struct fd {
             uint64_t expirations;
         } timerfd;
         struct {
+            uint64_t mask; // sigset_t_
+            struct list signalfds; // locked by signalfd_lock
+        } signalfd;
+        struct {
+            unsigned seals; // locked by seals_lock in fs/memfd.c
+            char name[64];
+        } memfd;
+        struct {
             int domain;
             int type;
             int protocol;

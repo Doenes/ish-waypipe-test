@@ -21,6 +21,8 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		AA57D0010000000000000003 /* signalfd.c in Sources */ = {isa = PBXBuildFile; fileRef = AA57D0010000000000000004 /* signalfd.c */; };
+		AA57D0010000000000000001 /* memfd.c in Sources */ = {isa = PBXBuildFile; fileRef = AA57D0010000000000000002 /* memfd.c */; };
 		0FC2383C2991FBA6004C09EC /* mmx.c in Sources */ = {isa = PBXBuildFile; fileRef = 0FC2383B2991FB82004C09EC /* mmx.c */; };
 		491B31E62883BF22008EEFB0 /* ThemeViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 491B31E52883BF22008EEFB0 /* ThemeViewController.m */; };
 		49302D8E277669D300C9885A /* ish.c in Sources */ = {isa = PBXBuildFile; fileRef = 49302D8D277669D300C9885A /* ish.c */; };
@@ -426,6 +428,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AA57D0010000000000000004 /* signalfd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = signalfd.c; sourceTree = "<group>"; };
+		AA57D0010000000000000002 /* memfd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = memfd.c; sourceTree = "<group>"; };
 		0FC2383B2991FB82004C09EC /* mmx.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = mmx.c; sourceTree = "<group>"; };
 		408A2639236440F8008A4E81 /* iOSFS.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = iOSFS.m; sourceTree = "<group>"; };
 		408A263B23644102008A4E81 /* iOSFS.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = iOSFS.h; sourceTree = "<group>"; };
@@ -1124,6 +1128,7 @@
 				497F6C91254E5C9800C82F46 /* errno.c */,
 				497F6C80254E5C9700C82F46 /* errno.h */,
 				497F6C95254E5C9800C82F46 /* eventfd.c */,
+				AA57D0010000000000000004 /* signalfd.c */,
 				497F6C81254E5C9700C82F46 /* exec.c */,
 				497F6C90254E5C9700C82F46 /* exit.c */,
 				497F6C8D254E5C9700C82F46 /* fork.c */,
@@ -1168,6 +1173,7 @@
 			isa = PBXGroup;
 			children = (
 				497F6BFE254E5C0E00C82F46 /* adhoc.c */,
+				AA57D0010000000000000002 /* memfd.c */,
 				497F6BDC254E5C0D00C82F46 /* dev.c */,
 				497F6BDE254E5C0D00C82F46 /* dev.h */,
 				497F6C01254E5C0E00C82F46 /* devices.h */,
@@ -2037,6 +2043,7 @@
 				497F6CFA254E5EA500C82F46 /* tlb.c in Sources */,
 				497F6CFB254E5EA500C82F46 /* vec.c in Sources */,
 				497F6CFC254E5EA500C82F46 /* adhoc.c in Sources */,
+				AA57D0010000000000000001 /* memfd.c in Sources */,
 				497F6CFD254E5EA500C82F46 /* dev.c in Sources */,
 				497F6CFE254E5EA500C82F46 /* dir.c in Sources */,
 				497F6CFF254E5EA500C82F46 /* dyndev.c in Sources */,
@@ -2072,6 +2079,7 @@
 				497F6D1D254E5EA600C82F46 /* epoll.c in Sources */,
 				497F6D1E254E5EA600C82F46 /* errno.c in Sources */,
 				497F6D1F254E5EA600C82F46 /* eventfd.c in Sources */,
+				AA57D0010000000000000003 /* signalfd.c in Sources */,
 				497F6D20254E5EA600C82F46 /* exec.c in Sources */,
 				497F6D21254E5EA600C82F46 /* exit.c in Sources */,
 				497F6D22254E5EA600C82F46 /* fork.c in Sources */,

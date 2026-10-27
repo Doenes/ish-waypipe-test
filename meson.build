@@ -106,6 +106,7 @@ if get_option('kernel') == 'ish'
         'kernel/random.c',
         'kernel/misc.c',
         'kernel/eventfd.c',
+        'kernel/signalfd.c',
         'kernel/ipc.c',
         'kernel/ptrace.c',
 
@@ -130,6 +131,7 @@ if get_option('kernel') == 'ish'
         'fs/dyndev.c',
 
         'fs/adhoc.c',
+        'fs/memfd.c',
         'fs/sock.c',
         'fs/pipe.c',
         'fs/sockrestart.c',

@@ -98,11 +98,15 @@ noreturn void do_exit(int status) {
         } else {
             leader->zombie = true;
             notify(&parent->group->child_exit);
+            // Like Linux, si_code says how the child died and si_status is
+            // the exit code or the signal, not the wait status.
+            int exit_code = current->exit_code;
             struct siginfo_ info = {
-                .code = SI_KERNEL_,
+                .code = (exit_code & 0x7f) == 0 ? CLD_EXITED_ :
+                    exit_code & 0x80 ? CLD_DUMPED_ : CLD_KILLED_,
                 .child.pid = current->pid,
                 .child.uid = current->uid,
-                .child.status = current->exit_code,
+                .child.status = (exit_code & 0x7f) == 0 ? (exit_code >> 8) & 0xff : exit_code & 0x7f,
                 .child.utime = clock_from_timeval(group_rusage.utime),
                 .child.stime = clock_from_timeval(group_rusage.stime),
             };

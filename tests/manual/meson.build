@@ -29,3 +29,4 @@ executable('qemu-test', ['qemu-test.c'], link_args: ['-lm'])
 
 run_target('busybox',
     command: ['get-busybox.sh'])
+executable('wayland', ['wayland.c'], link_args: ['-static'])

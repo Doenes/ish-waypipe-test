@@ -70,6 +70,7 @@ int_t sys_timer_settime(dword_t timer, int_t flags, addr_t new_value_addr, addr_
 int_t sys_timer_delete(dword_t timer_id);
 fd_t sys_timerfd_create(int_t clockid, int_t flags);
 int_t sys_timerfd_settime(fd_t f, int_t flags, addr_t new_value_addr, addr_t old_value_addr);
+int_t sys_timerfd_gettime(fd_t f, addr_t value_addr);
 
 dword_t sys_times(addr_t tbuf);
 dword_t sys_nanosleep(addr_t req, addr_t rem);

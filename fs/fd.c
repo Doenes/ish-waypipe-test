@@ -7,6 +7,7 @@
 #include "fs/poll.h"
 #include "fs/fd.h"
 #include "fs/inode.h"
+#include "fs/memfd.h"
 
 struct fd *fd_create(const struct fd_ops *ops) {
     struct fd *fd = malloc(sizeof(struct fd));
@@ -218,6 +219,39 @@ dword_t sys_close(fd_t f) {
     return f_close(f);
 }
 
+#define CLOSE_RANGE_UNSHARE_ (1 << 1)
+#define CLOSE_RANGE_CLOEXEC_ (1 << 2)
+
+int_t sys_close_range(uint_t first, uint_t last, uint_t flags) {
+    STRACE("close_range(%u, %u, %#x)", first, last, flags);
+    if (flags & ~(CLOSE_RANGE_UNSHARE_ | CLOSE_RANGE_CLOEXEC_))
+        return _EINVAL;
+    if (first > last)
+        return _EINVAL;
+
+    if (flags & CLOSE_RANGE_UNSHARE_ && current->files->refcount > 1) {
+        struct fdtable *table = fdtable_copy(current->files);
+        if (IS_ERR(table))
+            return PTR_ERR(table);
+        struct fdtable *old_table = current->files;
+        current->files = table;
+        fdtable_release(old_table);
+    }
+
+    struct fdtable *table = current->files;
+    lock(&table->lock);
+    for (unsigned f = first; f <= last && f < table->size; f++) {
+        if (table->files[f] == NULL)
+            continue;
+        if (flags & CLOSE_RANGE_CLOEXEC_)
+            bit_set(f, table->cloexec);
+        else
+            fdtable_close(table, f);
+    }
+    unlock(&table->lock);
+    return 0;
+}
+
 void fdtable_do_cloexec(struct fdtable *table) {
     lock(&table->lock);
     for (fd_t f = 0; (unsigned) f < table->size; f++)
@@ -304,7 +338,8 @@ dword_t sys_fcntl(fd_t f, dword_t cmd, dword_t arg) {
             STRACE("fcntl(%d, F_DUPFD_CLOEXEC, %d)", f, arg);
             fd->refcount++;
             new_f = f_install_start(fd, arg);
-            bit_set(new_f, table->cloexec);
+            if (new_f >= 0)
+                bit_set(new_f, table->cloexec);
             return new_f;
 
         case F_GETFD_:
@@ -374,6 +409,13 @@ dword_t sys_fcntl(fd_t f, dword_t cmd, dword_t arg) {
             if (user_read(arg, &flock, sizeof(flock)))
                 return _EFAULT;
             return fcntl_setlk(fd, &flock, cmd == F_SETLKW_);
+
+        case F_ADD_SEALS_:
+            STRACE("fcntl(%d, F_ADD_SEALS, %#x)", f, arg);
+            return memfd_add_seals(fd, arg);
+        case F_GET_SEALS_:
+            STRACE("fcntl(%d, F_GET_SEALS)", f);
+            return memfd_get_seals(fd);
 
         default:
             STRACE("fcntl(%d, %d)", f, cmd);

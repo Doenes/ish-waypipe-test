@@ -62,6 +62,9 @@ struct sigaction_ {
 #define SI_TIMER_ -2
 #define SI_TKILL_ -6
 #define SI_KERNEL_ 128
+#define CLD_EXITED_ 1
+#define CLD_KILLED_ 2
+#define CLD_DUMPED_ 3
 #define TRAP_TRACE_ 2
 #define SEGV_MAPERR_ 1
 #define SEGV_ACCERR_ 2
@@ -135,6 +138,8 @@ int send_group_signal(dword_t pgid, int sig, struct siginfo_ info);
 void receive_signals(void);
 // set the signal mask, restore it to what it was before on the next receive_signals call
 void sigmask_set_temp(sigset_t_ mask);
+// wake up anything polling a signalfd that's interested in this signal
+void signalfd_notify(int sig);
 
 struct sighand {
     atomic_uint refcount;
